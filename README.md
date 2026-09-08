@@ -63,12 +63,13 @@
    3. `supabase/migrations/0003_rls_policies.sql` (보안 정책)
    4. `supabase/migrations/0004_seed_sample_data.sql` (샘플 데이터 — **선택사항**, 실제 운영에는 건너뛰어도 됩니다)
    5. `supabase/migrations/0005_branch_business_type.sql` (지사 운영구분 필드 추가)
+   6. `supabase/migrations/0006_add_branch_code.sql` (지사코드 필드 추가)
 
 각 단계마다 하단에 "Success. No rows returned" 등의 메시지가 나오면 정상입니다. 에러가 나면 이전 단계가
 제대로 실행됐는지 확인 후 다시 시도하세요.
 
-> 이미 0001~0004까지 적용해 운영 중인 DB라면 **0005 파일만 추가로 실행**하면 됩니다. 기존 데이터는
-> 전혀 건드리지 않고 `branch_business_type` 컬럼만 nullable로 추가되므로 초기화가 필요 없습니다.
+> 이미 이전 파일들을 적용해 운영 중인 DB라면 **새로 추가된 번호의 파일만** 추가로 실행하면 됩니다.
+> 기존 데이터는 전혀 건드리지 않고 컬럼만 nullable로 추가되므로 초기화가 필요 없습니다.
 > 앞으로도 스키마를 변경할 때는 기존 migration 파일을 고치지 말고 항상 새 번호 파일을 추가하세요.
 
 > Supabase CLI(`supabase db push`)를 쓸 수 있다면 `supabase/migrations` 폴더를 그대로 연결해 한 번에
