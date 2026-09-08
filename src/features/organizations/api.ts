@@ -32,27 +32,30 @@ function escapeForOr(value: string) {
   return value.replace(/"/g, '\\"').replace(/[,()]/g, " ").trim();
 }
 
+// PostgREST의 or= 필터 문법에서 like/ilike 패턴의 와일드카드는 '%'가 아니라 '*'를 쓴다.
+// (URL 쿼리 문자열에서 '%'는 퍼센트 인코딩 문자와 겹쳐 모호해지므로 PostgREST가 '*'를
+// 표준 별칭으로 요구한다 — 원격 요청 형태의 raw 필터 문자열을 직접 만들 때는 반드시 '*' 사용.)
 function buildSearchOrClause(term: string): string | null {
   const cleaned = escapeForOr(term);
   if (!cleaned) return null;
 
   const clauses = [
-    `organization_name.ilike."%${cleaned}%"`,
-    `branch_code.ilike."%${cleaned}%"`,
-    `business_name.ilike."%${cleaned}%"`,
-    `representative_name.ilike."%${cleaned}%"`,
-    `address.ilike."%${cleaned}%"`,
-    `note.ilike."%${cleaned}%"`,
-    `login_id.ilike."%${cleaned}%"`,
-    `recommender.ilike."%${cleaned}%"`,
-    `region.ilike."%${cleaned}%"`,
+    `organization_name.ilike."*${cleaned}*"`,
+    `branch_code.ilike."*${cleaned}*"`,
+    `business_name.ilike."*${cleaned}*"`,
+    `representative_name.ilike."*${cleaned}*"`,
+    `address.ilike."*${cleaned}*"`,
+    `note.ilike."*${cleaned}*"`,
+    `login_id.ilike."*${cleaned}*"`,
+    `recommender.ilike."*${cleaned}*"`,
+    `region.ilike."*${cleaned}*"`,
   ];
 
   const digits = normalizeDigits(term);
   if (digits.length >= 2) {
-    clauses.push(`mobile_normalized.ilike."%${digits}%"`);
-    clauses.push(`telephone_normalized.ilike."%${digits}%"`);
-    clauses.push(`business_registration_number_normalized.ilike."%${digits}%"`);
+    clauses.push(`mobile_normalized.ilike."*${digits}*"`);
+    clauses.push(`telephone_normalized.ilike."*${digits}*"`);
+    clauses.push(`business_registration_number_normalized.ilike."*${digits}*"`);
   }
 
   return clauses.join(",");
@@ -102,7 +105,13 @@ export async function listOrganizations(
     .order(sortBy, { ascending: sortDir === "asc" })
     .range(from, to);
 
-  if (error) throw error;
+  if (error) {
+    if (import.meta.env.DEV) {
+      // 검색/목록 조회 실패 원인을 조용히 숨기지 않고 개발 콘솔에 그대로 남긴다.
+      console.error("[listOrganizations] query failed", { params, error });
+    }
+    throw error;
+  }
   return { data: (data ?? []) as unknown as OrganizationListRow[], count: count ?? 0 };
 }
 
@@ -182,7 +191,7 @@ export async function searchBranches(search: string, limit = 30): Promise<Branch
 
   const term = escapeForOr(search);
   if (term) {
-    query = query.or(`organization_name.ilike."%${term}%",branch_code.ilike."%${term}%"`);
+    query = query.or(`organization_name.ilike."*${term}*",branch_code.ilike."*${term}*"`);
   }
 
   const { data, error } = await query;

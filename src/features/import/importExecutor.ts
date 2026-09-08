@@ -103,9 +103,11 @@ export async function runImport(
     onProgress({ processed, total: importable.length, phase: "지사" });
   }
 
-  // 지사명 -> id 매핑 (방금 등록/기존 지사 모두 포함, 2순위 매칭용)
+  // 지사명 -> id 매핑 (방금 등록/기존 지사 모두 포함, 2순위 매칭용).
+  // 같은 이름의 지사가 DB에 2개 이상 있으면 어느 쪽에 연결해야 할지 알 수 없으므로,
+  // 임의로 하나를 골라 잘못 연결하지 않도록 값을 null(=중복으로 판단 불가)로 표시해 둔다.
   const branchNames = Array.from(new Set(branchRows.map((r) => r.organizationName).filter(Boolean)));
-  const branchNameToId = new Map<string, string>();
+  const branchNameToId = new Map<string, string | null>();
   if (branchNames.length > 0) {
     for (const namesChunk of chunk(branchNames, 200)) {
       const { data } = await supabase
@@ -113,7 +115,14 @@ export async function runImport(
         .select("id, organization_name")
         .eq("organization_type", "BRANCH")
         .in("organization_name", namesChunk);
-      (data ?? []).forEach((b) => branchNameToId.set(b.organization_name, b.id));
+      (data ?? []).forEach((b) => {
+        const existing = branchNameToId.get(b.organization_name);
+        if (existing === undefined) {
+          branchNameToId.set(b.organization_name, b.id);
+        } else if (existing !== b.id) {
+          branchNameToId.set(b.organization_name, null); // 동일 이름의 지사가 2개 이상 존재 (중복)
+        }
+      });
     }
   }
 
@@ -161,12 +170,21 @@ export async function runImport(
         continue;
       }
     } else {
-      parentId = branchNameToId.get(parentBranch.organizationName);
-      if (!parentId) {
+      const matched = branchNameToId.get(parentBranch.organizationName);
+      if (matched === null) {
+        summary.failed += 1;
+        summary.failedRows.push({
+          excelRowNumber: row.excelRowNumber,
+          reason: `지사명이 중복되어 자동으로 연결할 수 없습니다. 지사코드를 입력해 다시 시도하세요. (${parentBranch.organizationName})`,
+        });
+        continue;
+      }
+      if (!matched) {
         summary.failed += 1;
         summary.failedRows.push({ excelRowNumber: row.excelRowNumber, reason: "소속지사 등록에 실패하여 함께 처리되지 못했습니다." });
         continue;
       }
+      parentId = matched;
     }
 
     resolvedAgencyRows.push({ row, parentId });

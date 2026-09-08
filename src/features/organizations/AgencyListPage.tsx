@@ -110,6 +110,13 @@ export function AgencyListPage() {
                   불러오는 중...
                 </TD>
               </TR>
+            ) : list.error ? (
+              <TR>
+                <TD colSpan={12} className="py-8 text-center text-destructive">
+                  목록을 불러오는 중 오류가 발생했습니다.
+                  <div className="mt-1 text-xs text-muted-foreground">{list.error}</div>
+                </TD>
+              </TR>
             ) : list.data.length === 0 ? (
               <TR>
                 <TD colSpan={12} className="py-8 text-center text-muted-foreground">
