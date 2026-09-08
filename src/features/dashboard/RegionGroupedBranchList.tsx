@@ -2,96 +2,24 @@ import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { fetchAllOrganizations, getBranchAgencyCounts } from "@/features/organizations/api";
-import { formatErrorMessage } from "@/lib/errors";
+import { REGION_ACCENT_CLASSES, regionSectionDomId } from "@/features/dashboard/regionStyles";
+import type { RegionGroup } from "@/features/dashboard/useRegionGroupedBranches";
 
-const UNSPECIFIED_REGION = "미지정 권역";
-
-interface BranchRow {
-  id: string;
-  name: string;
-  agencyCount: number;
-}
-
-interface RegionGroup {
-  region: string;
-  branches: BranchRow[];
-  agencyTotal: number;
+interface Props {
+  groups: RegionGroup[] | null;
+  loading: boolean;
+  error: string | null;
 }
 
 /**
  * 지사별 지사기관 수를 권역(region)별로 그룹화해서 보여준다.
- * 기관 수는 항상 branch_agency_counts 뷰(= parent_branch_id 기준 COUNT)를 그대로 재사용하고,
- * 권역 정보만 지사 목록 조회로 추가로 가져와 프론트에서 합친다 — 지사별로 반복 조회하는
- * N+1 구조가 아니라 요청 2번으로 끝난다.
+ * 데이터는 부모(DashboardPage)로부터 받는다 — RegionSummaryCards와 동일한
+ * useRegionGroupedBranches() 결과를 공유해서 숫자가 항상 일치하고, Supabase
+ * 쿼리도 대시보드 전체에서 한 번만 실행된다.
  */
-export function RegionGroupedBranchList() {
+export function RegionGroupedBranchList({ groups, loading, error }: Props) {
   const navigate = useNavigate();
-  const [groups, setGroups] = React.useState<RegionGroup[] | null>(null);
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [branches, counts] = await Promise.all([
-          fetchAllOrganizations({ organizationType: "BRANCH" }),
-          getBranchAgencyCounts(),
-        ]);
-        if (!mounted) return;
-
-        const agencyCountByBranchId = new Map(counts.map((c) => [c.branch_id, c.agency_count]));
-        const byRegion = new Map<string, BranchRow[]>();
-
-        for (const branch of branches) {
-          const region = branch.region?.trim() || UNSPECIFIED_REGION;
-          const row: BranchRow = {
-            id: branch.id,
-            name: branch.organization_name,
-            agencyCount: agencyCountByBranchId.get(branch.id) ?? 0,
-          };
-          const bucket = byRegion.get(region);
-          if (bucket) bucket.push(row);
-          else byRegion.set(region, [row]);
-        }
-
-        const result: RegionGroup[] = Array.from(byRegion.entries()).map(([region, list]) => ({
-          region,
-          branches: [...list].sort((a, b) => a.name.localeCompare(b.name, "ko")),
-          agencyTotal: list.reduce((sum, r) => sum + r.agencyCount, 0),
-        }));
-
-        result.sort((a, b) => {
-          if (a.region === UNSPECIFIED_REGION) return 1;
-          if (b.region === UNSPECIFIED_REGION) return -1;
-          return a.region.localeCompare(b.region, "ko");
-        });
-
-        setGroups(result);
-        setExpanded((prev) => {
-          // 이미 사용자가 접었다 폈다 한 상태는 유지하고, 새로 나타난 권역만 기본 펼침으로 추가한다.
-          const next = { ...prev };
-          for (const g of result) {
-            if (!(g.region in next)) next[g.region] = true;
-          }
-          return next;
-        });
-      } catch (e) {
-        if (mounted) setError(formatErrorMessage(e));
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   function toggle(region: string) {
     setExpanded((prev) => ({ ...prev, [region]: !(prev[region] ?? true) }));
@@ -117,11 +45,11 @@ export function RegionGroupedBranchList() {
       {groups.map((g) => {
         const isOpen = expanded[g.region] ?? true;
         return (
-          <Card key={g.region} className="overflow-hidden">
+          <Card key={g.region} id={regionSectionDomId(g.region)} className="overflow-hidden scroll-mt-4">
             <button
               type="button"
               onClick={() => toggle(g.region)}
-              className={`flex w-full items-center justify-between bg-yellow-50 px-4 py-3 text-left hover:bg-yellow-100 ${
+              className={`flex w-full items-center justify-between px-4 py-3 text-left ${REGION_ACCENT_CLASSES} ${
                 isOpen ? "border-b border-border" : ""
               }`}
               aria-expanded={isOpen}

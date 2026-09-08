@@ -3,11 +3,16 @@ import { Building2, Building, Database, CheckCircle2, Clock, History, Sparkles, 
 import { Card, CardContent } from "@/components/ui/card";
 import { getDashboardSummary } from "@/features/organizations/api";
 import { RegionGroupedBranchList } from "@/features/dashboard/RegionGroupedBranchList";
+import { RegionSummaryCards } from "@/features/dashboard/RegionSummaryCards";
+import { useRegionGroupedBranches } from "@/features/dashboard/useRegionGroupedBranches";
 import type { DashboardSummary } from "@/types/database";
 
 export function DashboardPage() {
   const [summary, setSummary] = React.useState<DashboardSummary | null>(null);
   const [loading, setLoading] = React.useState(true);
+  // 권역별 지사/기관 데이터는 한 번만 불러와서 요약 카드와 상세 목록이 함께 쓴다
+  // (숫자가 항상 일치하고, Supabase 쿼리도 중복되지 않는다).
+  const regionGroups = useRegionGroupedBranches();
 
   React.useEffect(() => {
     getDashboardSummary()
@@ -72,8 +77,21 @@ export function DashboardPage() {
       </Card>
 
       <div>
+        <h2 className="mb-3 text-sm font-semibold">권역별 지사 현황</h2>
+        <RegionSummaryCards
+          groups={regionGroups.groups}
+          loading={regionGroups.loading}
+          error={regionGroups.error}
+        />
+      </div>
+
+      <div>
         <h2 className="mb-3 text-sm font-semibold">지사별 지사기관 수</h2>
-        <RegionGroupedBranchList />
+        <RegionGroupedBranchList
+          groups={regionGroups.groups}
+          loading={regionGroups.loading}
+          error={regionGroups.error}
+        />
       </div>
     </div>
   );
