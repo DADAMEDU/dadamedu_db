@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getDashboardSummary } from "@/features/organizations/api";
 import { RegionGroupedBranchList } from "@/features/dashboard/RegionGroupedBranchList";
 import { RegionSummaryCards } from "@/features/dashboard/RegionSummaryCards";
+import { DashboardDownloadMenu } from "@/features/dashboard/DashboardDownloadMenu";
 import { useRegionGroupedBranches } from "@/features/dashboard/useRegionGroupedBranches";
 import type { DashboardSummary } from "@/types/database";
 
@@ -36,7 +37,10 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold">대시보드</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">대시보드</h1>
+        <DashboardDownloadMenu summary={summary} groups={regionGroups.groups} />
+      </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {cards.map((c) => (

@@ -1,12 +1,15 @@
 import * as React from "react";
 import { fetchAllOrganizations, getBranchAgencyCounts } from "@/features/organizations/api";
 import { formatErrorMessage } from "@/lib/errors";
+import type { BranchBusinessType } from "@/types/database";
 
 export const UNSPECIFIED_REGION = "미지정 권역";
 
 export interface BranchRow {
   id: string;
   name: string;
+  branchCode: string | null;
+  businessType: BranchBusinessType | null;
   agencyCount: number;
 }
 
@@ -52,6 +55,8 @@ export function useRegionGroupedBranches() {
           const row: BranchRow = {
             id: branch.id,
             name: branch.organization_name,
+            branchCode: branch.branch_code,
+            businessType: branch.branch_business_type,
             agencyCount: agencyCountByBranchId.get(branch.id) ?? 0,
           };
           const bucket = byRegion.get(region);
