@@ -155,7 +155,7 @@ export async function validateRows(rows: ImportRow[]): Promise<ImportRow[]> {
     if (row.organizationType === "BRANCH") {
       const code = normalizeBranchCode(row.fields.branch_code);
       if (code && dbBranchCodeSet.has(code)) {
-        escalate(row, "중복", "이미 DB에 등록된 지사코드입니다.");
+        escalate(row, "중복", "이미 사용 중인 지사코드입니다.");
       }
     }
   }

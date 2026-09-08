@@ -9,8 +9,48 @@ import type {
   OrganizationType,
 } from "@/types/database";
 
+// organizations는 parent_branch_id로 자기 자신을 참조하는 self-relation이다.
+// PostgREST의 embed 힌트(`organizations!organizations_parent_branch_id_fkey(...)`)는
+// self-relation에서 스키마 캐시가 관계를 못 찾아 PGRST200(400)을 내는 환경이 있으므로
+// 절대 select 문자열에 embed를 넣지 않는다. parent_branch_id는 순수 UUID 컬럼으로만
+// 가져오고, 소속지사명이 필요한 화면에서는 attachParentBranchNames()로 별도 조회해 붙인다.
 export const LIST_COLUMNS =
-  "id, organization_type, parent_branch_id, branch_business_type, branch_code, region, organization_name, business_name, representative_name, business_registration_number, telephone, mobile, address, approval_status, join_date, login_id, recommender, note, created_at, parent:organizations!organizations_parent_branch_id_fkey(organization_name)";
+  "id, organization_type, parent_branch_id, branch_business_type, branch_code, region, organization_name, business_name, representative_name, business_registration_number, telephone, mobile, address, approval_status, join_date, login_id, recommender, note, created_at";
+
+/**
+ * 목록/검색 결과에 소속지사명을 붙인다. embed 대신 parent_branch_id를 모아
+ * 한 번의 별도 쿼리로 해당 BRANCH들만 조회해 매핑하는 방식이라 self-relation
+ * embed 힌트에 전혀 의존하지 않는다. 대상 행이 없으면 추가 쿼리 자체를 생략한다.
+ */
+async function attachParentBranchNames<T extends { parent_branch_id: string | null }>(
+  rows: T[]
+): Promise<(T & { parent: { organization_name: string } | null })[]> {
+  const parentIds = Array.from(new Set(rows.map((r) => r.parent_branch_id).filter(Boolean))) as string[];
+
+  if (parentIds.length === 0) {
+    return rows.map((r) => ({ ...r, parent: null }));
+  }
+
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("id, organization_name")
+    .in("id", parentIds);
+
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.error("[attachParentBranchNames] failed to resolve parent branch names", error);
+    }
+    // 소속지사명은 부가 정보이므로, 이 조회가 실패했다고 해서 본 목록/검색 자체를
+    // 실패시키지 않는다 — 이름 없이(parent: null)라도 원래 결과는 그대로 보여준다.
+    return rows.map((r) => ({ ...r, parent: null }));
+  }
+
+  const nameById = new Map((data ?? []).map((b) => [b.id as string, b.organization_name as string]));
+  return rows.map((r) => ({
+    ...r,
+    parent: r.parent_branch_id ? { organization_name: nameById.get(r.parent_branch_id) ?? "" } : null,
+  }));
+}
 
 export interface ListOrganizationsParams {
   search?: string;
@@ -112,7 +152,9 @@ export async function listOrganizations(
     }
     throw error;
   }
-  return { data: (data ?? []) as unknown as OrganizationListRow[], count: count ?? 0 };
+
+  const withParent = await attachParentBranchNames((data ?? []) as unknown as OrganizationListRow[]);
+  return { data: withParent, count: count ?? 0 };
 }
 
 /** Excel 다운로드용: 현재 필터에 해당하는 전체 행을 chunk 단위로 모두 가져온다 (페이지네이션 우회, 다운로드 전용). */

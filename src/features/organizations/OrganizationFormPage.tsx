@@ -19,6 +19,7 @@ import {
 } from "@/features/organizations/api";
 import { useToast } from "@/components/ui/toast";
 import type { OrganizationType } from "@/types/database";
+import { formatErrorMessage } from "@/lib/errors";
 
 const UNSET_BUSINESS_TYPE = "__unset__";
 
@@ -139,7 +140,7 @@ export function OrganizationFormPage() {
         navigate(`/organizations/${created.id}`);
       }
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = formatErrorMessage(e);
       if (message.includes("uq_org_branch_code_normalized") || message.toLowerCase().includes("branch_code")) {
         setError("branch_code", { type: "manual", message: "이미 사용 중인 지사코드입니다." });
       } else {

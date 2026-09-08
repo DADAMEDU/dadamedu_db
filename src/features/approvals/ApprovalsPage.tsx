@@ -9,6 +9,7 @@ import { useOrganizationList } from "@/features/organizations/useOrganizationLis
 import { updateOrganization } from "@/features/organizations/api";
 import { useToast } from "@/components/ui/toast";
 import { formatDate } from "@/lib/format";
+import { formatErrorMessage } from "@/lib/errors";
 
 export function ApprovalsPage() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export function ApprovalsPage() {
     } catch (e) {
       toast({
         title: "처리에 실패했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {

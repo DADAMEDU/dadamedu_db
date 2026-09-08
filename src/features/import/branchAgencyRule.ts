@@ -13,6 +13,7 @@
  */
 import type { ColumnMapping, ImportRow, SystemField } from "@/features/import/types";
 import type { ParsedExcelResult } from "@/features/import/excelParser";
+import { applyRecommenderConversion } from "@/features/import/recommenderConversionRule";
 
 /** 병합셀로 인해 그룹 첫 행에만 값이 채워지는 컬럼 목록 */
 export const FORWARD_FILL_FIELDS: SystemField[] = ["region"];
@@ -55,7 +56,7 @@ export function buildImportRows(parsed: ParsedExcelResult, mapping: ColumnMappin
   let lastBranchExcelRow: number | null = null;
 
   for (const row of parsed.rows) {
-    const fields = buildFieldsForRow(row.values, mapping);
+    let fields = buildFieldsForRow(row.values, mapping);
 
     for (const field of FORWARD_FILL_FIELDS) {
       if (!fields[field] && lastValues[field]) fields[field] = lastValues[field];
@@ -63,6 +64,9 @@ export function buildImportRows(parsed: ParsedExcelResult, mapping: ColumnMappin
     }
 
     const organizationType = determineOrganizationType(fields);
+    // 추천인 컬럼은 구분에 따라 의미가 다르다(BRANCH=지사코드, AGENCY=추천인) — 이후 모든
+    // 단계(미리보기/검증/최종등록)가 이미 변환된 값을 보도록 여기서 한 번만 적용한다.
+    fields = applyRecommenderConversion(organizationType, fields);
     const organizationName = resolveOrganizationName(organizationType, fields);
 
     let parentBranchExcelRow: number | null = null;

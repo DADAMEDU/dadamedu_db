@@ -15,6 +15,7 @@ import { buildImportRows } from "@/features/import/branchAgencyRule";
 import { validateRows, summarizeRows } from "@/features/import/validateRows";
 import { runImport, type DuplicatePolicy, type ImportProgress, type ImportSummary } from "@/features/import/importExecutor";
 import { useToast } from "@/components/ui/toast";
+import { formatErrorMessage } from "@/lib/errors";
 
 export function ImportWizardPage() {
   const { toast } = useToast();
@@ -61,7 +62,7 @@ export function ImportWizardPage() {
     } catch (e) {
       toast({
         title: "검증 중 오류가 발생했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {
@@ -79,7 +80,7 @@ export function ImportWizardPage() {
     } catch (e) {
       toast({
         title: "일괄등록에 실패했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {

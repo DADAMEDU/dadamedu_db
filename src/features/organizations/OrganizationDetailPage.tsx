@@ -16,6 +16,7 @@ import {
 import { ApprovalStatusBadge, BranchBusinessTypeBadge } from "@/features/organizations/StatusBadge";
 import { formatDate, formatDateTime } from "@/lib/format";
 import type { Organization, OrganizationListRow } from "@/types/database";
+import { formatErrorMessage } from "@/lib/errors";
 
 export function OrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -67,7 +68,7 @@ export function OrganizationDetailPage() {
     } catch (e) {
       toast({
         title: "삭제할 수 없습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     }

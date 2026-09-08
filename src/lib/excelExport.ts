@@ -48,7 +48,9 @@ function toRow(org: OrganizationListRow): Record<(typeof EXPORT_HEADERS)[number]
     승인여부: org.approval_status ?? "",
     가입날짜: formatDate(org.join_date),
     아이디: org.login_id ?? "",
-    추천인: org.recommender ?? "",
+    // 기존 Excel 호환: 지사는 추천인 컬럼에 지사코드를, 지사기관은 추천인 값을 그대로 출력한다
+    // (Import 시 반대 방향으로 동일하게 변환되므로 대칭적으로 동작한다).
+    추천인: org.organization_type === "BRANCH" ? org.branch_code ?? "" : org.recommender ?? "",
     비고: org.note ?? "",
   };
 }

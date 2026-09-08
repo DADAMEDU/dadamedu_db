@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchAllOrganizations } from "@/features/organizations/api";
 import { downloadOrganizationsExcel } from "@/lib/excelExport";
 import { useToast } from "@/components/ui/toast";
+import { formatErrorMessage } from "@/lib/errors";
 
 export function ExportPage() {
   const { toast } = useToast();
@@ -21,7 +22,7 @@ export function ExportPage() {
     } catch (e) {
       toast({
         title: "다운로드에 실패했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {

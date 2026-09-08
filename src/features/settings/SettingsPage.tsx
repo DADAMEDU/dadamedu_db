@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
+import { formatErrorMessage } from "@/lib/errors";
 
 export function SettingsPage() {
   const { profile, session } = useAuth();
@@ -28,7 +29,7 @@ export function SettingsPage() {
     } catch (e) {
       toast({
         title: "변경에 실패했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {

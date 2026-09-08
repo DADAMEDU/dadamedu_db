@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ParsedExcelResult } from "@/features/import/excelParser";
@@ -16,6 +16,7 @@ interface Props {
 export function StepMapping({ parsed, mapping, onChange }: Props) {
   const mappedFields = new Set(Object.values(mapping).filter(Boolean));
   const missingRequired = REQUIRED_SYSTEM_FIELDS.filter((f) => !mappedFields.has(f));
+  const hasRecommenderMapping = mappedFields.has("recommender");
 
   return (
     <div className="flex flex-col gap-3">
@@ -27,6 +28,19 @@ export function StepMapping({ parsed, mapping, onChange }: Props) {
         <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           다음 필드는 지사/지사기관 구분에 반드시 필요합니다: {missingRequired.map((f) => SYSTEM_FIELD_LABELS[f]).join(", ")}
+        </div>
+      )}
+
+      {hasRecommenderMapping && (
+        <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div>
+            <span className="font-medium">추천인</span> 컬럼은 구분에 따라 다르게 저장됩니다.
+            <ul className="mt-1 list-disc pl-5 text-muted-foreground">
+              <li>지사: 지사코드로 사용 (recommender는 비워둠)</li>
+              <li>지사기관: 추천인으로 사용</li>
+            </ul>
+          </div>
         </div>
       )}
 
@@ -62,6 +76,11 @@ export function StepMapping({ parsed, mapping, onChange }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {mapping[idx] === "recommender" && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      지사: 지사코드로 사용 / 지사기관: 추천인으로 사용
+                    </p>
+                  )}
                 </TD>
               </TR>
             );

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { listOrganizations, type ListOrganizationsParams } from "@/features/organizations/api";
 import type { OrganizationListRow, OrganizationType } from "@/types/database";
+import { formatErrorMessage } from "@/lib/errors";
 
 /** branchBusinessType: "" = 전체, "UNSET" = 미설정(NULL), 그 외 = EXISTING_ONLY/NEW_ONLY/BOTH */
 export const BRANCH_BUSINESS_TYPE_UNSET_FILTER = "UNSET";
@@ -59,7 +60,7 @@ export function useOrganizationList(organizationType: OrganizationType | undefin
       setData(result.data);
       setCount(result.count);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatErrorMessage(e));
     } finally {
       setLoading(false);
     }

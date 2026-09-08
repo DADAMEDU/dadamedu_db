@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { parseExcelFile, type ParsedExcelResult } from "@/features/import/excelParser";
 import { useToast } from "@/components/ui/toast";
+import { formatErrorMessage } from "@/lib/errors";
 
 interface Props {
   onParsed: (file: File, parsed: ParsedExcelResult) => void;
@@ -28,7 +29,7 @@ export function StepFileSelect({ onParsed }: Props) {
     } catch (e) {
       toast({
         title: "파일을 분석하지 못했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/auth/AuthProvider";
 import { formatDateTime } from "@/lib/format";
 import type { Profile, UserRole } from "@/types/database";
+import { formatErrorMessage } from "@/lib/errors";
 
 export function UsersPage() {
   const { toast } = useToast();
@@ -41,7 +42,7 @@ export function UsersPage() {
     } catch (e) {
       toast({
         title: "권한 변경에 실패했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     }
@@ -142,7 +143,7 @@ function CreateUserDialog({
     } catch (e) {
       toast({
         title: "계정 생성에 실패했습니다.",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatErrorMessage(e),
         variant: "destructive",
       });
     } finally {
