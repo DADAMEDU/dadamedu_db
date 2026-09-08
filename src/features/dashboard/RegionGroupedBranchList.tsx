@@ -121,7 +121,7 @@ export function RegionGroupedBranchList() {
             <button
               type="button"
               onClick={() => toggle(g.region)}
-              className={`flex w-full items-center justify-between px-4 py-3 text-left hover:bg-accent/50 ${
+              className={`flex w-full items-center justify-between bg-yellow-50 px-4 py-3 text-left hover:bg-yellow-100 ${
                 isOpen ? "border-b border-border" : ""
               }`}
               aria-expanded={isOpen}
@@ -132,9 +132,9 @@ export function RegionGroupedBranchList() {
                 ) : (
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
-                <span className="text-sm font-semibold">{g.region}</span>
+                <span className="text-sm font-bold">{g.region}</span>
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-bold text-muted-foreground">
                 지사 {g.branches.length}개 · 지사기관 {g.agencyTotal}개
               </span>
             </button>

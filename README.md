@@ -64,6 +64,7 @@
    4. `supabase/migrations/0004_seed_sample_data.sql` (샘플 데이터 — **선택사항**, 실제 운영에는 건너뛰어도 됩니다)
    5. `supabase/migrations/0005_branch_business_type.sql` (지사 운영구분 필드 추가)
    6. `supabase/migrations/0006_add_branch_code.sql` (지사코드 필드 추가)
+   7. `supabase/migrations/0007_allow_duplicate_business_registration_number.sql` (사업자등록번호 중복 허용)
 
 각 단계마다 하단에 "Success. No rows returned" 등의 메시지가 나오면 정상입니다. 에러가 나면 이전 단계가
 제대로 실행됐는지 확인 후 다시 시도하세요.

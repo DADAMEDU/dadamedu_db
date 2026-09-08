@@ -29,7 +29,16 @@ function isPlausiblePhone(digits: string): boolean {
 
 /**
  * 행별 검증: 필수값 누락 / 형식 오류 / 파일 내부 중복 / DB 기존 중복.
- * DB 조회는 정규화된 사업자등록번호·아이디 값을 모아 한 번에 조회한다(N+1 방지).
+ *
+ * 사업자등록번호(business_registration_number/_normalized)는 더 이상 고유값도,
+ * 중복판단 기준도 아니다 — 같은 사업자등록번호를 가진 지사/지사기관이 여러 건
+ * 존재할 수 있으며 전부 정상 등록 대상이다. 그래서 이 함수는 사업자등록번호를
+ * 검증/중복 판단에 전혀 사용하지 않는다(검색용 정규화 컬럼 자체는 계속 유지됨).
+ *
+ * 남아있는 실제 중복판단 기준: 지사코드(branch_code, BRANCH 전용, 하드 "중복"),
+ * 아이디(login_id, 소프트 "확인필요").
+ *
+ * DB 조회는 정규화된 값들을 모아 한 번에 조회한다(N+1 방지).
  */
 export async function validateRows(rows: ImportRow[]): Promise<ImportRow[]> {
   // 초기화
@@ -72,15 +81,10 @@ export async function validateRows(rows: ImportRow[]): Promise<ImportRow[]> {
     }
   }
 
-  // 2) 파일 내부 중복 (사업자등록번호, 지사코드 우선, 없으면 아이디)
-  const brnSeen = new Map<string, number[]>();
+  // 2) 파일 내부 중복 (지사코드, 아이디 — 사업자등록번호는 대상 아님)
   const loginIdSeen = new Map<string, number[]>();
   const branchCodeSeen = new Map<string, number[]>();
   for (const row of rows) {
-    const brn = normalizeDigits(row.fields.business_registration_number ?? "");
-    if (brn) {
-      brnSeen.set(brn, [...(brnSeen.get(brn) ?? []), row.excelRowNumber]);
-    }
     const loginId = (row.fields.login_id ?? "").trim();
     if (loginId) {
       loginIdSeen.set(loginId, [...(loginIdSeen.get(loginId) ?? []), row.excelRowNumber]);
@@ -94,11 +98,6 @@ export async function validateRows(rows: ImportRow[]): Promise<ImportRow[]> {
   }
 
   for (const row of rows) {
-    const brn = normalizeDigits(row.fields.business_registration_number ?? "");
-    if (brn && (brnSeen.get(brn)?.length ?? 0) > 1) {
-      const others = brnSeen.get(brn)!.filter((n) => n !== row.excelRowNumber);
-      escalate(row, "중복", `엑셀 내부에 동일한 사업자등록번호가 있습니다. (${others.join(", ")}행)`);
-    }
     const loginId = (row.fields.login_id ?? "").trim();
     if (loginId && (loginIdSeen.get(loginId)?.length ?? 0) > 1) {
       const others = loginIdSeen.get(loginId)!.filter((n) => n !== row.excelRowNumber);
@@ -113,18 +112,11 @@ export async function validateRows(rows: ImportRow[]): Promise<ImportRow[]> {
     }
   }
 
-  // 3) DB 기존 중복 조회 (배치)
-  const brnList = Array.from(brnSeen.keys());
+  // 3) DB 기존 중복 조회 (배치, 지사코드/아이디만 — 사업자등록번호는 조회하지 않음)
   const loginIdList = Array.from(loginIdSeen.keys());
   const branchCodeList = Array.from(branchCodeSeen.keys());
 
-  const [existingBrn, existingLoginId, existingBranchCode] = await Promise.all([
-    brnList.length
-      ? supabase
-          .from("organizations")
-          .select("business_registration_number_normalized")
-          .in("business_registration_number_normalized", brnList)
-      : Promise.resolve({ data: [] as { business_registration_number_normalized: string }[] }),
+  const [existingLoginId, existingBranchCode] = await Promise.all([
     loginIdList.length
       ? supabase.from("organizations").select("login_id").in("login_id", loginIdList)
       : Promise.resolve({ data: [] as { login_id: string }[] }),
@@ -137,17 +129,10 @@ export async function validateRows(rows: ImportRow[]): Promise<ImportRow[]> {
       : Promise.resolve({ data: [] as { branch_code_normalized: string }[] }),
   ]);
 
-  const dbBrnSet = new Set(
-    (existingBrn.data ?? []).map((r) => r.business_registration_number_normalized)
-  );
   const dbLoginIdSet = new Set((existingLoginId.data ?? []).map((r) => r.login_id));
   const dbBranchCodeSet = new Set((existingBranchCode.data ?? []).map((r) => r.branch_code_normalized));
 
   for (const row of rows) {
-    const brn = normalizeDigits(row.fields.business_registration_number ?? "");
-    if (brn && dbBrnSet.has(brn)) {
-      escalate(row, "중복", "이미 DB에 등록된 사업자등록번호입니다.");
-    }
     const loginId = (row.fields.login_id ?? "").trim();
     if (loginId && dbLoginIdSet.has(loginId)) {
       escalate(row, "확인필요", "이미 DB에 등록된 아이디입니다.");
