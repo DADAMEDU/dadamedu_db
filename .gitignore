@@ -1,0 +1,24 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+.DS_Store
+*.log
+npm-debug.log*
+
+.vscode/*
+!.vscode/extensions.json
+
+# 임시 분석 산출물
+*.tmp.csv
+
+# 실제 회원 개인정보가 담긴 샘플/백업 엑셀 원본은 git에 올리지 않는다
+예시파일.xlsx
+*백업*.xlsx
